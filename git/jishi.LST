@@ -1,0 +1,185 @@
+C51 COMPILER V9.01   JISHI                                                                 01/28/2018 09:55:47 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE JISHI
+OBJECT MODULE PLACED IN jishi.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE jishi.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1                          #include<reg52.h>
+   2          #define uchar unsigned char
+   3          #define uint unsigned int
+   4          uchar code table[]={0x3f,0x06,0x5b,0x4f,
+   5          0x66,0x6d,0x7d,0x07,0x7f,0x6f};
+   6          uint qian,bai,shi,ge;
+   7          sbit key0=P2^0;
+   8          sbit key1=P2^1;
+   9          sbit key2=P2^2;
+  10          sbit key3=P2^3;
+  11          sbit key4=P2^4;
+  12          sbit w1=P3^4;   //蜂鸣器在P3^2口，数码管在P3^4,5,6,7口，按键在P2口
+  13          sbit w2=P3^5;   //由于没有锁存器，只能给低电平选通数码管
+  14          sbit w3=P3^6;
+  15          sbit w4=P3^7;
+  16          uint sum=0,num=0;
+  17          
+  18          void delayms(uint ms)
+  19          {
+  20   1              uint i,j;
+  21   1              for(i=110;i>0;i--)
+  22   1                      for(j=ms;j>0;j--);
+  23   1      }
+  24          void shuizi()
+  25          {ge=sum%10;
+  26   1       shi=(sum%100)/10;
+  27   1       bai=(sum%1000)/100;
+  28   1       qian=sum/1000;
+  29   1      }
+  30          
+  31          
+  32          void keyscan()
+  33          {
+  34   1              if(key0==0)
+  35   1               {
+  36   2                      delayms(5);
+  37   2                      if(key0==0)
+  38   2                      {
+  39   3                      sum=sum+1000;
+  40   3                      while(!key0);
+  41   3                      }
+  42   2               }
+  43   1      
+  44   1                if(key1==0)
+  45   1               {
+  46   2                      delayms(5);
+  47   2                      if(key1==0)
+  48   2                      {
+  49   3                      sum=sum+100;
+  50   3                      while(!key1);
+  51   3                      }
+  52   2               }
+  53   1      
+  54   1               if(key2==0)
+  55   1               {
+C51 COMPILER V9.01   JISHI                                                                 01/28/2018 09:55:47 PAGE 2   
+
+  56   2                      delayms(5);
+  57   2                      if(key2==0)
+  58   2                      {
+  59   3                      sum=sum+10;
+  60   3                      while(!key2);
+  61   3                      }
+  62   2               }
+  63   1               if(key3==0)
+  64   1               {
+  65   2                      delayms(5);
+  66   2                      if(key3==0)
+  67   2                      {
+  68   3                      sum=sum+1;
+  69   3                      while(!key3);
+  70   3                      }
+  71   2               }
+  72   1      }
+  73          
+  74          
+  75          void display(int qian,int bai,int shi,int ge)    //显示函数
+  76          {       w1=0;   //选通
+  77   1              P0=table[qian];//P0口显示数码管          
+  78   1              delayms(1);//延时让数据停留
+  79   1              w1=1;//关闭不关的话当下一次赋值给第二个数码管第一个也会显示造成数据混乱
+  80   1              //注意此开发板由于没用锁存器而是用三极管的开关作用所以必须延时
+  81   1              //大家可以试试不用延时，锁存器的功能是把数据暂时保存，通过开启关闭
+  82   1               //锁存器来传送数据所以开关过程不用延时
+  83   1              w2=0;             
+  84   1              P0=table[bai]+0x80;
+  85   1                       
+  86   1              delayms(1);
+  87   1              w2=1;
+  88   1      
+  89   1              w3=0;
+  90   1              P0=table[shi];
+  91   1              delayms(1);
+  92   1              w3=1;
+  93   1      
+  94   1              w4=0;
+  95   1              P0=table[ge];           
+  96   1              delayms(1);
+  97   1              w4=1;
+  98   1      }
+  99          
+ 100          
+ 101          
+ 102          
+ 103          
+ 104          
+ 105          void main()
+ 106          {
+ 107   1              uchar flag=1;
+ 108   1              while(flag)
+ 109   1              {
+ 110   2                      keyscan();
+ 111   2                      shuizi();
+ 112   2                  display(qian, bai, shi, ge);
+ 113   2                      if(key4==0)
+ 114   2                      {
+ 115   3                              delayms(5);
+ 116   3                              if(key4==0)
+ 117   3                              {
+C51 COMPILER V9.01   JISHI                                                                 01/28/2018 09:55:47 PAGE 3   
+
+ 118   4                                      EA=1;
+ 119   4                                      flag=0;
+ 120   4                                      while(!key4);
+ 121   4                              }
+ 122   3                      }
+ 123   2              }
+ 124   1      
+ 125   1      
+ 126   1              TMOD=0x01;
+ 127   1              TH0=(65536-1000)/256;
+ 128   1              TL0=(65536-1000)%256;
+ 129   1              ET0=1;
+ 130   1              TR0=1;
+ 131   1      
+ 132   1              while(1)
+ 133   1              {
+ 134   2                      display(qian, bai, shi, ge);
+ 135   2              if(sum==0)
+ 136   2              {
+ 137   3              P3=0xfb;
+ 138   3              EA=0;
+ 139   3              }
+ 140   2              }
+ 141   1       
+ 142   1      }
+ 143           
+ 144           void T0_time() interrupt 1
+ 145           {
+ 146   1                      TH0=(65536-1000)/256;
+ 147   1                      TL0=(65536-1000)%256;
+ 148   1                      num++;
+ 149   1                      if(num>=10)
+ 150   1                      {
+ 151   2                              num=0;
+ 152   2                              sum--;
+ 153   2                              ge=sum%10;
+ 154   2                              shi=(sum%100)/10;
+ 155   2                          bai=(sum%1000)/100;
+ 156   2                              qian=sum/1000;
+ 157   2                      }
+ 158   1       }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    559    ----
+   CONSTANT SIZE    =     10    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     12       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
